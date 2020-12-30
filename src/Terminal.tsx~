@@ -91,7 +91,7 @@ class Terminal extends React.Component<MyProps, MyState> {
     }
 
     processCommand(commandStr: string) {
-        var newOutputText: Array<Array<string>> = this.state.outputText.concat([[this.getPrompt() + commandStr, '']]);
+        var newOutputText: Array<Array<string>> = this.state.outputText.concat([[this.getPrompt() + commandStr, ' input-text']]);
         const [command, ...args] = commandStr.trim().split(/\s+/);
         var newCurrentDirectory = this.state.currentDirectory;
 

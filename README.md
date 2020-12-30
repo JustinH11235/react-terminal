@@ -23,7 +23,10 @@ See the section about [deployment](https://facebook.github.io/create-react-app/d
 
 ### Using In Your Own Website
 
-The /src/Terminal.tsx file holds the `<Terminal />` React component that represents the terminal.\
-The other main React component is `<InputLine />` which is in /src/InputLine.tsx.\
-All supporting JavaScript classes are in /src/classes/.\
-All CSS stylesheets are currently inside /src/.\
+The /src/Terminal.tsx file holds the `<Terminal />` React component that represents the terminal.
+
+The other main React component is `<InputLine />` which is in /src/InputLine.tsx.
+
+All supporting JavaScript classes are in /src/classes/.
+
+All CSS stylesheets are currently inside /src/.

@@ -150,7 +150,8 @@ class InputLine extends React.Component<MyProps, MyState> {
 
         return (
             <div className="input-line" ref={this.inputLine}>
-                <span className="prompt">{this.props.prompt}</span>{currentInputElems}
+                <span className="prompt">{this.props.prompt}</span>
+                <span className="input-text">{currentInputElems}</span>
             </div>
         );
     }

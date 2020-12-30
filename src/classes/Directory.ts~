@@ -63,8 +63,9 @@ class Directory extends FSObject {
         } else if (pathArr[0] === "..") {
             if (this.parent === null) {
                 return this.findFSObjectByPath(nextPath);
+            } else {
+                return this.parent!.findFSObjectByPath(nextPath);
             }
-            return this.parent!.findFSObjectByPath(nextPath);
         }
 
         for (const obj of this.children) {

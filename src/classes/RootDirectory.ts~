@@ -17,7 +17,7 @@ class RootDirectory extends Directory {
     static createRootDir(tree: FileTreeRep): RootDirectory {
         const newRoot = new RootDirectory([]);
         tree.children.forEach((child) => {
-            newRoot.addChildByRep(child);
+            newRoot.addDirByRep(child);
         });
         return newRoot;
     }
