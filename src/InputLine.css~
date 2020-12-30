@@ -1,0 +1,34 @@
+.cursor {
+    background-color: white;
+    color: black;
+
+    animation-name: flash;
+    animation-duration: 1s;
+    animation-iteration-count: 9;
+    animation-timing-function: step-end;
+}
+
+.cursor:empty::before {
+    content: "\00a0";
+}
+
+@keyframes flash {
+    from {
+        background-color: white;
+        color: black;
+    }
+    50% {
+        background-color: transparent;
+        color: white;
+    }
+}
+
+.prompt {
+    font-weight: bold;
+    color: #fda51d;
+}
+
+.input-text {
+    font-weight: normal;
+    color: #F#E885E7;
+}
