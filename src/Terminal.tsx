@@ -13,6 +13,7 @@ type MyState = {
     user: string,
     fileSystem: RootDirectory,
     currentDirectory: Directory,
+    needsHelp: boolean,
 };
 class Terminal extends React.Component<MyProps, MyState> {
     constructor(props: MyProps) {
@@ -38,9 +39,11 @@ class Terminal extends React.Component<MyProps, MyState> {
             user: initialUser,
             fileSystem: rootDir,
             currentDirectory: rootDir.getHome(initialUser) as Directory,
+            needsHelp: false,
         };
         this.processCommand = this.processCommand.bind(this);
         this.updateHistory = this.updateHistory.bind(this);
+        this.autocomplete = this.autocomplete.bind(this);
     }
 
     getHomeDir(): Directory {
@@ -69,12 +72,8 @@ class Terminal extends React.Component<MyProps, MyState> {
         return `${this.state.user}@mygaminghut:${this.getPath()}$ `;
     }
 
-    findDirByDirtyPath(path: string): Directory | null {
+    findDirByDirtyPathArr(dirPath: Array<string>): Directory | null {
         var startDir;
-        var dirPath = path.split(/\/+/);
-        if (dirPath[dirPath.length - 1] === '') {
-            dirPath.splice(dirPath.length - 1, 1);
-        }
         if (dirPath[0] === '') {
             // Start from root
             startDir = this.state.fileSystem;
@@ -85,90 +84,101 @@ class Terminal extends React.Component<MyProps, MyState> {
             dirPath.splice(0, 1, 'home', this.state.user);
         } else {
             startDir = this.state.currentDirectory;
-        }
+        } 
+        dirPath = dirPath.filter(i => i);
 
         return startDir.findDirByPath(dirPath);
     }
 
-    processCommand(commandStr: string) {
+    findDirByDirtyPath(path: string): Directory | null {
+        return this.findDirByDirtyPathArr(path.split(/\/+/));
+    }
+
+    commandLs(outputText: Array<Array<string>>): void {
+        const children = this.state.currentDirectory.children;
+        children.forEach(child => {
+            outputText.push([child.toString(), (child instanceof Directory ? ' directory' : ' file')]);
+        }); 
+    }
+
+    processCommand(commandStr: string, doNothing: boolean = false) {
         var newOutputText: Array<Array<string>> = this.state.outputText.concat([[this.getPrompt() + commandStr, ' input-text']]);
         const [command, ...args] = commandStr.trim().split(/\s+/);
         var newCurrentDirectory = this.state.currentDirectory;
 
-        switch (command) {
-            case 'exit':
-                break; // Not sure what this would do
-            case '':
-                break;
-            case 'clear':
-                newOutputText = [];     
-                break;
-            case 'help':
-                newOutputText.push(
-                    ['React Terminal, version 1.0.0 (browser)', ''],
-                    ['\u00a0', ''],
-                    ['help            display the list of all commands', ''],
-                    ['clear           clear the terminal', ''],
-                    ['ls              list contents of current directory', ''],
-                    ['cd              change current directory', ''],
-                    ['pwd             print working directory', ''],
-                    ['mkdir [...DIRS] create a new directory', ''],
-                
-                ); 
-                break;
-            case 'pwd':
-                newOutputText.push([this.getFullPath(), '']);
-                break;
-            case 'ls':
-                const children = this.state.currentDirectory.children;
-                children.forEach(child => {
-                    newOutputText.push([child.toString(), (child instanceof Directory ? ' directory' : ' file')]);
-                }); 
-                break;
-            case 'cd':
-                if (args.length === 0) {
-                    newCurrentDirectory = this.getHomeDir();
+        if (!doNothing) {
+            switch (command) {
+                case 'exit':
+                    break; // Not sure what this would do
+                case '':
                     break;
-                } else if (args.length > 1) {
-                    newOutputText.push([`${command}: too many arguments`, '']);
+                case 'clear':
+                    newOutputText = [];     
                     break;
-                } 
-
-                const foundDir = this.findDirByDirtyPath(args[0]);
-                if (foundDir === null) {
-                    newOutputText.push([`${command}: ${args[0]}: No such file or directory`, '']);
+                case 'help':
+                    newOutputText.push(
+                        ['React Terminal, version 1.0.0 (browser)', ''],
+                        ['\u00a0', ''],
+                        ['help            display the list of all commands', ''],
+                        ['clear           clear the terminal', ''],
+                        ['ls              list contents of current directory', ''],
+                        ['cd              change current directory', ''],
+                        ['pwd             print working directory', ''],
+                        ['mkdir [...DIRS] create a new directory', ''],
+                    
+                    ); 
                     break;
-                }
+                case 'pwd':
+                    newOutputText.push([this.getFullPath(), '']);
+                    break;
+                case 'ls':
+                    this.commandLs(newOutputText);
+                    break;
+                case 'cd':
+                    if (args.length === 0) {
+                        newCurrentDirectory = this.getHomeDir();
+                        break;
+                    } else if (args.length > 1) {
+                        newOutputText.push([`${command}: too many arguments`, '']);
+                        break;
+                    } 
 
-                newCurrentDirectory = foundDir;
-
-                break;
-            case 'mkdir':
-                for (const dirName of args) {
-                    var dirPath = dirName.split(/\/+/);
-                    if (dirPath[dirPath.length - 1] === '') {
-                        dirPath.splice(dirPath.length - 1, 1);
+                    const foundDir = this.findDirByDirtyPath(args[0]);
+                    if (foundDir === null) {
+                        newOutputText.push([`${command}: ${args[0]}: No such file or directory`, '']);
+                        break;
                     }
 
-                    const parentDirPath = dirPath.slice(0, -1).join('/');
-                    const newDirName = dirPath[dirPath.length - 1];
+                    newCurrentDirectory = foundDir;
 
-                    const parentDir = this.findDirByDirtyPath(parentDirPath);
-                    if (parentDir === null) {
-                        newOutputText.push([`${command}: cannot create directory '${dirName}': No such file or directory`, '']);
-                        continue;
+                    break;
+                case 'mkdir':
+                    for (const dirName of args) {
+                        var dirPath = dirName.split(/\/+/);
+                        if (dirPath[dirPath.length - 1] === '') {
+                            dirPath.splice(-1, 1);
+                        }
+
+                        const parentDirPath = dirPath.slice(0, -1);
+                        const newDirName = dirPath[dirPath.length - 1];
+
+                        const parentDir = this.findDirByDirtyPathArr(parentDirPath);
+                        if (parentDir === null) {
+                            newOutputText.push([`${command}: cannot create directory '${dirName}': No such file or directory`, '']);
+                            continue;
+                        }
+                        const res = parentDir!.addDirByName(newDirName);
+                        if (res === null) {
+                            newOutputText.push([`${command}: cannot create directory '${dirName}': File exists`, '']);
+                            continue;
+                        }    
                     }
-                    const res = parentDir!.addDirByName(newDirName);
-                    if (res === null) {
-                        newOutputText.push([`${command}: cannot create directory '${dirName}': File exists`, '']);
-                        continue;
-                    }    
-                }
-                break;
-            default:
-                newOutputText.push([`${command}: command not found`, '']);
-                break;
-        } 
+                    break;
+                default:
+                    newOutputText.push([`${command}: command not found`, '']);
+                    break;
+            } 
+        }
 
         const newCommandHistory = this.state.commandHistory.slice();
         newCommandHistory.splice(-1, 0, commandStr);
@@ -196,6 +206,58 @@ class Terminal extends React.Component<MyProps, MyState> {
         });
     }
 
+    autocomplete(commandStr: string): void {
+        const [command, ...args] = commandStr.trim().split(/\s+/);
+
+        if (command === 'cd') {
+            const dirName = args[0] || '';
+            var dirPath = dirName.split(/\/+/);
+
+            const parentDirPath = dirPath.slice(0, -1);
+            const currentName = dirPath[dirPath.length - 1];
+
+            const parentDir = this.findDirByDirtyPathArr(parentDirPath);
+            if (parentDir === null) return;
+
+            const possibleMatches = parentDir.children.filter(child => child.name.startsWith(currentName));
+            if (possibleMatches.length === 0) return;
+
+            var ind = currentName.length;
+            if (!possibleMatches.every(match => ind < match.name.length && match.name.charAt(ind) === possibleMatches[0].name.charAt(ind))) {
+                const newCommandHistory = this.state.commandHistory.slice();
+                newCommandHistory[this.state.historyIndex] = commandStr;
+                if (this.state.needsHelp) {
+                    const newOutputText = this.state.outputText.concat([[this.getPrompt() + commandStr, ' input-text']]);
+                    this.commandLs(newOutputText);
+
+                    this.setState({
+                        commandHistory: newCommandHistory,
+                        outputText: newOutputText,
+                    });
+                } else {
+                    this.setState({
+                        commandHistory: newCommandHistory,
+                        needsHelp: true,
+                    });
+                }
+                return;
+            }
+
+            while (possibleMatches.every(match => ind < match.name.length && match.name.charAt(ind) === possibleMatches[0].name.charAt(ind))) {
+                ind++;
+            }
+            const completedName = possibleMatches[0].name.substring(0, ind);
+            const newCommandHistory = this.state.commandHistory.slice();
+            newCommandHistory[this.state.historyIndex] = `${command} ${completedName}`;
+
+            this.setState({
+                commandHistory: newCommandHistory,
+                needsHelp: false,
+            });
+        }
+         
+    }
+
     render() {
         const outputTextElems: Array<JSX.Element> = this.state.outputText.map(([text, classes]: Array<string>, index: number) => {
             return <div key={index} className={"output-line" + classes}>{text}</div>;
@@ -212,6 +274,7 @@ class Terminal extends React.Component<MyProps, MyState> {
                         initialInput={this.state.commandHistory[this.state.historyIndex]}
                         onReturn={this.processCommand}
                         updateHistory={this.updateHistory}
+                        autocomplete={this.autocomplete}
                     />
                 </div>
             </div>

@@ -4,8 +4,9 @@ import './InputLine.css';
 type MyProps = {
     prompt: string,
     initialInput: string,
-    onReturn: (command: string) => void,
+    onReturn: (command: string, doNothing?: boolean) => void,
     updateHistory: (increment: number, newInput: string) => void,
+    autocomplete: (commandStr: string) => void,
 };
 type MyState = {
     currentInput: string,
@@ -54,8 +55,8 @@ class InputLine extends React.Component<MyProps, MyState> {
     handleKeyDown(e: KeyboardEvent): void {
         const key: number = e.charCode || e.keyCode || e.which;
         const keyStr: string = String.fromCharCode(key);
-        var newInput: string;
-        var newCursor: number;
+        var newInput: string = this.state.currentInput;
+        var newCursor: number = this.state.cursorIndex;
 
         if (key === 13) { // Return key
             e.preventDefault();
@@ -64,7 +65,7 @@ class InputLine extends React.Component<MyProps, MyState> {
             this.props.onReturn(this.state.currentInput);
         } else if (key === 9) { // Tab key
             e.preventDefault(); // TODO
-            // Do something... bool var 
+            this.props.autocomplete(this.state.currentInput);
             return;
         } else if (key === 32) { // Spacebar key
             e.preventDefault();
@@ -77,18 +78,22 @@ class InputLine extends React.Component<MyProps, MyState> {
         } else if (key === 46) { // Delete key
             e.preventDefault();
             newInput = this.removeAtIndex(this.state.currentInput, this.state.cursorIndex);
-            newCursor = this.state.cursorIndex;
         } else if (e.ctrlKey && key >= 65 && key <= 90) { // Any Ctrl + key
             e.preventDefault(); 
-            newInput = this.addAtIndex(this.state.currentInput, this.state.cursorIndex, '^' + keyStr);
-            newCursor = this.state.cursorIndex + 2;
+            if (key === 67) {
+                // Ctrl-C
+                newInput = '';
+                newCursor = 0;
+                this.props.onReturn(this.addAtIndex(this.state.currentInput, this.state.cursorIndex, '^' + keyStr), true);
+            } else {
+                newInput = this.addAtIndex(this.state.currentInput, this.state.cursorIndex, '^' + keyStr);
+                newCursor = this.state.cursorIndex + 2;
+            }
         } else if (key === 37) { // Left Arrow key
             e.preventDefault(); 
-            newInput = this.state.currentInput;
             newCursor = Math.max(0, this.state.cursorIndex - 1);
         } else if (key === 39) { // Right Arrow key
             e.preventDefault(); 
-            newInput = this.state.currentInput;
             newCursor = Math.min(this.state.currentInput.length, this.state.cursorIndex + 1);
         } else if (key === 38) { // Up Arrow key
             e.preventDefault(); 
