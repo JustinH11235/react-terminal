@@ -1,5 +1,6 @@
 import React from 'react';
 import InputLine from './InputLine';
+import FSObject from './classes/FSObject';
 import RootDirectory from './classes/RootDirectory';
 import Directory from './classes/Directory';
 
@@ -94,11 +95,15 @@ class Terminal extends React.Component<MyProps, MyState> {
         return this.findDirByDirtyPathArr(path.split(/\/+/));
     }
 
-    commandLs(outputText: Array<Array<string>>): void {
-        const children = this.state.currentDirectory.children;
+    printChildren(outputText: Array<Array<string>>, children: Array<FSObject>) {
         children.forEach(child => {
             outputText.push([child.toString(), (child instanceof Directory ? ' directory' : ' file')]);
         }); 
+    }
+
+    commandLs(outputText: Array<Array<string>>): void {
+        const children = this.state.currentDirectory.children;
+        this.printChildren(outputText, children);
     }
 
     processCommand(commandStr: string, doNothing: boolean = false) {
@@ -228,7 +233,7 @@ class Terminal extends React.Component<MyProps, MyState> {
                 newCommandHistory[this.state.historyIndex] = commandStr;
                 if (this.state.needsHelp) {
                     const newOutputText = this.state.outputText.concat([[this.getPrompt() + commandStr, ' input-text']]);
-                    this.commandLs(newOutputText);
+                    this.printChildren(newOutputText, possibleMatches);
 
                     this.setState({
                         commandHistory: newCommandHistory,
