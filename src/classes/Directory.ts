@@ -2,11 +2,6 @@ import FSObject from "./FSObject";
 import File from "./File";
 import LinkFile from "./LinkFile";
 
-type FileTreeRep = {
-    name: string,
-    children?: Array<FileTreeRep>,
-    url?: string,
-};
 class Directory extends FSObject {
     children: Array<FSObject>;
 
@@ -41,7 +36,7 @@ class Directory extends FSObject {
         if (newDir === null) return null;
 
         tree.children!.forEach((child) => {
-            if ('children' in child) {
+            if ("children" in child) {
                 newDir.addDirByRep(child);
             } else {
                 newDir.addFileByRep(child);
@@ -74,7 +69,7 @@ class Directory extends FSObject {
         const nextPath = pathArr.slice(1);
         if (pathArr.length === 0) {
             return this;
-        } else if (pathArr[0] === '') {
+        } else if (pathArr[0] === "") {
             return this.findFSObjectByPath(nextPath);
         } else if (pathArr[0] === ".") {
             return this.findFSObjectByPath(nextPath);

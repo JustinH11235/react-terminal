@@ -1,11 +1,6 @@
 import FSObject from "./FSObject";
 import Directory from "./Directory";
 
-type FileTreeRep = {
-    name: string,
-    children?: Array<FileTreeRep>,
-    url?: string,
-};
 class RootDirectory extends Directory {
     constructor(aChildren: Array<FSObject>) {
         super("", null, aChildren);
