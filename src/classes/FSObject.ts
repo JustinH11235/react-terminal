@@ -21,6 +21,10 @@ class FSObject {
     toString(): string {
         return this.name;
     }
+
+    findFSObjectByPath(pathArr: Array<string>): FSObject | null {
+        throw new Error("Method findFSObjectByPath() must be implemented.");
+    }
 }
 
 export default FSObject;

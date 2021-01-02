@@ -2,8 +2,9 @@ import FSObject from "./FSObject";
 import Directory from "./Directory";
 
 type FileTreeRep = {
-    name: string;
-    children: Array<FileTreeRep>;
+    name: string,
+    children?: Array<FileTreeRep>,
+    url?: string,
 };
 class RootDirectory extends Directory {
     constructor(aChildren: Array<FSObject>) {
@@ -16,8 +17,12 @@ class RootDirectory extends Directory {
 
     static createRootDir(tree: FileTreeRep): RootDirectory {
         const newRoot = new RootDirectory([]);
-        tree.children.forEach((child) => {
-            newRoot.addDirByRep(child);
+        tree.children!.forEach((child) => {
+            if ('children' in child) {
+                newRoot.addDirByRep(child);
+            } else {
+                newRoot.addFileByRep(child);
+            }
         });
         return newRoot;
     }

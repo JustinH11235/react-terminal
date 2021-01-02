@@ -15,11 +15,11 @@
 @keyframes flash {
     from {
         background-color: white;
-        color: black;
+        color: #48b9c7;
     }
     50% {
         background-color: transparent;
-        color: white;
+        color: revert;
     }
 }
 
@@ -30,5 +30,5 @@
 
 .input-text {
     font-weight: normal;
-    color: #E885E7;
+    color: #e885e7;
 }

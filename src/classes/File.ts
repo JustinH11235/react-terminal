@@ -15,6 +15,16 @@ class File extends FSObject {
     open() {
         throw new Error("Method open() must be implemented.");
     }
+
+    findFSObjectByPath(pathArr: Array<string>): FSObject | null {
+        if (pathArr.length === 0) {
+            return this;
+        } else if (pathArr[0] === "") {
+            return this.findFSObjectByPath(pathArr.slice(1));
+        }
+
+        return null;
+    }
 }
 
 export default File;

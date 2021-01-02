@@ -1,8 +1,10 @@
 import React from 'react';
 import InputLine from './InputLine';
+
 import FSObject from './classes/FSObject';
 import RootDirectory from './classes/RootDirectory';
 import Directory from './classes/Directory';
+import File from './classes/File';
 
 import './Terminal.css';
 
@@ -20,16 +22,26 @@ class Terminal extends React.Component<MyProps, MyState> {
     constructor(props: MyProps) {
         super(props);
         const rootDir = RootDirectory.createRootDir({
-            name: '',
-            children: [{
+            name: '', children: [{
                 name: 'home', children: [{
-                    name: 'justin', children: []
+                    name: 'justin', children: [{
+                        name: 'Desktop', children: [{
+                            name: 'GT_Scheduler', url: 'https://github.com/JustinH11235/GT-Scheduling-App#readme'
+                        }, {
+                            name: 'HPictionary', url: 'http://hpictionary.herokuapp.com/'
+                        }, {
+                            name: 'MGH_Stocks', url: 'https://mgh-stocks.herokuapp.com/'
+                        }, {
+                            name: 'QLearning_Snake', url: 'https://q-learning-snake.herokuapp.com/'
+                        }, {
+                            name: 'Multiplayer_Snake', url: 'https://test-multiplayer-snake.herokuapp.com/'
+                        }]
+                    }]
                 }]
             }, {
-                name: 'dir2',
-                children: []
+                name: 'etc', children: []
             }, {
-                name: 'dir3', children: []
+                name: 'bin', children: []
             }]
         });
         const initialUser = 'justin';
@@ -78,7 +90,6 @@ class Terminal extends React.Component<MyProps, MyState> {
         if (dirPath[0] === '') {
             // Start from root
             startDir = this.state.fileSystem;
-            dirPath.splice(0, 1);
         } else if (dirPath[0] === '~') {
             // Start from home
             startDir = this.state.fileSystem;
@@ -86,13 +97,32 @@ class Terminal extends React.Component<MyProps, MyState> {
         } else {
             startDir = this.state.currentDirectory;
         } 
-        dirPath = dirPath.filter(i => i);
 
         return startDir.findDirByPath(dirPath);
     }
 
     findDirByDirtyPath(path: string): Directory | null {
         return this.findDirByDirtyPathArr(path.split(/\/+/));
+    }
+
+    findFileByDirtyPathArr(filePath: Array<string>): File | null {
+        var startDir;
+        if (filePath[0] === '') {
+            // Start from root
+            startDir = this.state.fileSystem;
+        } else if (filePath[0] === '~') {
+            // Start from home
+            startDir = this.state.fileSystem;
+            filePath.splice(0, 1, 'home', this.state.user);
+        } else {
+            startDir = this.state.currentDirectory;
+        } 
+
+        return startDir.findFileByPath(filePath);
+    }
+
+    findFileByDirtyPath(path: string): File | null {
+        return this.findFileByDirtyPathArr(path.split(/\/+/));
     }
 
     printChildren(outputText: Array<Array<string>>, children: Array<FSObject>) {
@@ -179,6 +209,14 @@ class Terminal extends React.Component<MyProps, MyState> {
                         }    
                     }
                     break;
+                case 'open':
+                    const foundFile = this.findFileByDirtyPath(args[0]);
+                    if (foundFile === null) {
+                        newOutputText.push([`${command}: ${args[0]}: No such file or directory`, '']);
+                        break;
+                    }
+                    foundFile.open();
+                    break;
                 default:
                     newOutputText.push([`${command}: command not found`, '']);
                     break;
@@ -214,7 +252,7 @@ class Terminal extends React.Component<MyProps, MyState> {
     autocomplete(commandStr: string): void {
         const [command, ...args] = commandStr.trim().split(/\s+/);
 
-        if (command === 'cd') {
+        if (true) {
             const dirName = args[0] || '';
             var dirPath = dirName.split(/\/+/);
 
@@ -251,9 +289,9 @@ class Terminal extends React.Component<MyProps, MyState> {
             while (possibleMatches.every(match => ind < match.name.length && match.name.charAt(ind) === possibleMatches[0].name.charAt(ind))) {
                 ind++;
             }
-            const completedName = possibleMatches[0].name.substring(0, ind);
+            const endOfName = possibleMatches[0].name.substring(currentName.length, ind);
             const newCommandHistory = this.state.commandHistory.slice();
-            newCommandHistory[this.state.historyIndex] = `${command} ${completedName}`;
+            newCommandHistory[this.state.historyIndex] = `${commandStr}${endOfName}`;
 
             this.setState({
                 commandHistory: newCommandHistory,

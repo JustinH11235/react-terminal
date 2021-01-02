@@ -1,8 +1,11 @@
 import FSObject from "./FSObject";
+import File from "./File";
+import LinkFile from "./LinkFile";
 
 type FileTreeRep = {
-    name: string;
-    children: Array<FileTreeRep>;
+    name: string,
+    children?: Array<FileTreeRep>,
+    url?: string,
 };
 class Directory extends FSObject {
     children: Array<FSObject>;
@@ -24,9 +27,9 @@ class Directory extends FSObject {
     }
 
     addDirByName(name: string): Directory | null {
-        if (this.children.some(elem => elem.name === name)) {
-            return null;
-        }
+        // Directory by this name exists
+        if (this.children.some((elem) => elem.name === name)) return null;
+
         const newDir = new Directory(name, this, []);
         this.children = this.children.concat([newDir]);
         return newDir;
@@ -34,13 +37,26 @@ class Directory extends FSObject {
 
     addDirByRep(tree: FileTreeRep): Directory | null {
         const newDir = this.addDirByName(tree.name);
-        if (newDir === null) {
-            return null;
-        }
-        tree.children.forEach((child) => {
-            newDir.addDirByRep(child);
+        // Directory by this name exists
+        if (newDir === null) return null;
+
+        tree.children!.forEach((child) => {
+            if ('children' in child) {
+                newDir.addDirByRep(child);
+            } else {
+                newDir.addFileByRep(child);
+            }
         });
         return newDir;
+    }
+
+    addFileByRep(tree: FileTreeRep): File | null {
+        // File by this name exists
+        if (this.children.some((elem) => elem.name === tree.name)) return null;
+
+        const newFile = new LinkFile(tree.name, this, tree.url!);
+        this.children = this.children.concat([newFile]);
+        return newFile;
     }
 
     findChildByName(aName: string): FSObject | null {
@@ -58,6 +74,8 @@ class Directory extends FSObject {
         const nextPath = pathArr.slice(1);
         if (pathArr.length === 0) {
             return this;
+        } else if (pathArr[0] === '') {
+            return this.findFSObjectByPath(nextPath);
         } else if (pathArr[0] === ".") {
             return this.findFSObjectByPath(nextPath);
         } else if (pathArr[0] === "..") {
@@ -70,18 +88,7 @@ class Directory extends FSObject {
 
         for (const obj of this.children) {
             if (obj.name === pathArr[0]) {
-                if (obj instanceof Directory) {
-                    return obj.findFSObjectByPath(nextPath);
-                } else {
-                    // is a File
-                    if (pathArr.length === 1) {
-                        // last part of path
-                        return obj;
-                    } else {
-                        // a File cannot have children
-                        return null;
-                    }
-                }
+                return obj.findFSObjectByPath(nextPath);
             }
         }
         return null;
@@ -90,6 +97,15 @@ class Directory extends FSObject {
     findDirByPath(pathArr: Array<string>): Directory | null {
         const fsObj = this.findFSObjectByPath(pathArr);
         if (fsObj !== null && fsObj instanceof Directory) {
+            return fsObj;
+        } else {
+            return null;
+        }
+    }
+
+    findFileByPath(pathArr: Array<string>): File | null {
+        const fsObj = this.findFSObjectByPath(pathArr);
+        if (fsObj !== null && fsObj instanceof File) {
             return fsObj;
         } else {
             return null;
