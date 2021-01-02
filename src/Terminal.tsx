@@ -268,7 +268,11 @@ class Terminal extends React.Component<MyProps, MyState> {
             var ind = currentName.length;
             if (!possibleMatches.every(match => ind < match.name.length && match.name.charAt(ind) === possibleMatches[0].name.charAt(ind))) {
                 const newCommandHistory = this.state.commandHistory.slice();
-                newCommandHistory[this.state.historyIndex] = commandStr;
+                var ending = '';
+                if (possibleMatches.every(i => ind === i.name.length)) {
+                    ending = possibleMatches[0] instanceof Directory ? '/' : ' ';
+                }
+                newCommandHistory[this.state.historyIndex] = `${commandStr}${ending}`;
                 if (this.state.needsHelp) {
                     const newOutputText = this.state.outputText.concat([[this.getPrompt() + commandStr, ' input-text']]);
                     this.printChildren(newOutputText, possibleMatches);
@@ -289,9 +293,15 @@ class Terminal extends React.Component<MyProps, MyState> {
             while (possibleMatches.every(match => ind < match.name.length && match.name.charAt(ind) === possibleMatches[0].name.charAt(ind))) {
                 ind++;
             }
+
             const endOfName = possibleMatches[0].name.substring(currentName.length, ind);
+            //const newMatches = parentDir.children.filter(i => i.name.startsWith(currentName + endOfName)); 
+            var ending = '';
+            if (possibleMatches.every(i => ind === i.name.length)) {
+                ending = possibleMatches[0] instanceof Directory ? '/' : ' ';
+            }
             const newCommandHistory = this.state.commandHistory.slice();
-            newCommandHistory[this.state.historyIndex] = `${commandStr}${endOfName}`;
+            newCommandHistory[this.state.historyIndex] = `${commandStr}${endOfName}${ending}`;
 
             this.setState({
                 commandHistory: newCommandHistory,
