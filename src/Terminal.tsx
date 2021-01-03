@@ -6,13 +6,14 @@ import RootDirectory from './classes/RootDirectory';
 import Directory from './classes/Directory';
 import File from './classes/File';
 
-import './Terminal.css';
+import './styles/Terminal.css';
 
 type MyProps = {}
 type MyState = {
     outputText: Array<Array<string>>,
     commandHistory: Array<string>,
     historyIndex: number,
+    userList: Array<string>,
     user: string,
     fileSystem: RootDirectory,
     currentDirectory: Directory,
@@ -35,6 +36,8 @@ class Terminal extends React.Component<MyProps, MyState> {
                             name: 'QLearning_Snake', url: 'https://q-learning-snake.herokuapp.com/'
                         }, {
                             name: 'Multiplayer_Snake', url: 'https://test-multiplayer-snake.herokuapp.com/'
+                        }, {
+                            name: 'GitHub', url: 'https://github.com/JustinH11235'
                         }]
                     }]
                 }]
@@ -49,6 +52,7 @@ class Terminal extends React.Component<MyProps, MyState> {
             outputText: [],
             commandHistory: [''],
             historyIndex: 0,
+            userList: [initialUser],
             user: initialUser,
             fileSystem: rootDir,
             currentDirectory: rootDir.getHome(initialUser) as Directory,
@@ -59,8 +63,8 @@ class Terminal extends React.Component<MyProps, MyState> {
         this.autocomplete = this.autocomplete.bind(this);
     }
 
-    getHomeDir(): Directory {
-        return this.state.fileSystem.getHome(this.state.user); 
+    getHomeDir(user: string): Directory {
+        return this.state.fileSystem.getHome(user); 
     }
 
     getFullPath(): string {
@@ -140,6 +144,8 @@ class Terminal extends React.Component<MyProps, MyState> {
         var newOutputText: Array<Array<string>> = this.state.outputText.concat([[this.getPrompt() + commandStr, ' input-text']]);
         const [command, ...args] = commandStr.trim().split(/\s+/);
         var newCurrentDirectory = this.state.currentDirectory;
+        const newUserList = this.state.userList.slice();
+        var newUser = this.state.user;
 
         if (!doNothing) {
             switch (command) {
@@ -153,13 +159,19 @@ class Terminal extends React.Component<MyProps, MyState> {
                 case 'help':
                     newOutputText.push(
                         ['React Terminal, version 1.0.0 (browser)', ''],
+                        ['TAB                 autocomplete file paths', ''],
+                        ['UP/DOWN ARROW       back/forward in command history', ''],
                         ['\u00a0', ''],
-                        ['help            display the list of all commands', ''],
-                        ['clear           clear the terminal', ''],
-                        ['ls              list contents of current directory', ''],
-                        ['cd              change current directory', ''],
-                        ['pwd             print working directory', ''],
-                        ['mkdir [...DIRS] create a new directory', ''],
+                        ['help                display the list of all commands', ''],
+                        ['clear               clear the terminal', ''],
+                        ['ls                  list contents of current directory', ''],
+                        ['cd [PATH]           change current directory', ''],
+                        ['pwd                 prints working directory', ''],
+                        ['mkdir [...DIRS]     create a new directory', ''],
+                        ['open [PATH]         open a file', ''],
+                        ['whoami              prints current user', ''],
+                        ['useradd [USERNAME]  adds a new user', ''],
+                        ['su [USERNAME]       switches to new user', ''],
                     
                     ); 
                     break;
@@ -171,7 +183,7 @@ class Terminal extends React.Component<MyProps, MyState> {
                     break;
                 case 'cd':
                     if (args.length === 0) {
-                        newCurrentDirectory = this.getHomeDir();
+                        newCurrentDirectory = this.getHomeDir(this.state.user);
                         break;
                     } else if (args.length > 1) {
                         newOutputText.push([`${command}: too many arguments`, '']);
@@ -217,6 +229,26 @@ class Terminal extends React.Component<MyProps, MyState> {
                     }
                     foundFile.open();
                     break;
+                case 'whoami':
+                    newOutputText.push([`${this.state.user}`, '']);
+                    break;
+                case 'useradd':
+                    if (newUserList.indexOf(args[0]) !== -1) {
+                        newOutputText.push([`${command}: ${args[0]}: User already exists`, '']);
+                        break;
+                    }
+                    newUserList.push(args[0]);
+                    const homeDir = this.findDirByDirtyPathArr(['', 'home']);
+                    if (homeDir === null) break;
+                    homeDir!.addDirByName(args[0]);
+                    break;
+                case 'su':
+                    if (newUserList.indexOf(args[0]) === -1) {
+                        newOutputText.push([`${command}: ${args[0]}: User does not exist`, '']);
+                        break;
+                    }
+                    newUser = args[0];
+                    break;
                 default:
                     newOutputText.push([`${command}: command not found`, '']);
                     break;
@@ -231,6 +263,8 @@ class Terminal extends React.Component<MyProps, MyState> {
             commandHistory: newCommandHistory, 
             historyIndex: newCommandHistory.length - 1,
             currentDirectory: newCurrentDirectory,
+            userList: newUserList,
+            user: newUser,
         }); 
     }
 
@@ -268,11 +302,11 @@ class Terminal extends React.Component<MyProps, MyState> {
             var ind = currentName.length;
             if (!possibleMatches.every(match => ind < match.name.length && match.name.charAt(ind) === possibleMatches[0].name.charAt(ind))) {
                 const newCommandHistory = this.state.commandHistory.slice();
-                var ending = '';
+                let ending = '';
                 if (possibleMatches.every(i => ind === i.name.length)) {
                     ending = possibleMatches[0] instanceof Directory ? '/' : ' ';
                 }
-                newCommandHistory[this.state.historyIndex] = `${commandStr}${ending}`;
+                newCommandHistory[this.state.historyIndex] = `${command} ${dirName}${ending}`;
                 if (this.state.needsHelp) {
                     const newOutputText = this.state.outputText.concat([[this.getPrompt() + commandStr, ' input-text']]);
                     this.printChildren(newOutputText, possibleMatches);
@@ -295,13 +329,12 @@ class Terminal extends React.Component<MyProps, MyState> {
             }
 
             const endOfName = possibleMatches[0].name.substring(currentName.length, ind);
-            //const newMatches = parentDir.children.filter(i => i.name.startsWith(currentName + endOfName)); 
-            var ending = '';
+            let ending = '';
             if (possibleMatches.every(i => ind === i.name.length)) {
                 ending = possibleMatches[0] instanceof Directory ? '/' : ' ';
             }
             const newCommandHistory = this.state.commandHistory.slice();
-            newCommandHistory[this.state.historyIndex] = `${commandStr}${endOfName}${ending}`;
+            newCommandHistory[this.state.historyIndex] = `${command} ${dirName}${endOfName}${ending}`;
 
             this.setState({
                 commandHistory: newCommandHistory,

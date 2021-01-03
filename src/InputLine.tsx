@@ -1,5 +1,5 @@
 import React from 'react';
-import './InputLine.css';
+import './styles/InputLine.css';
 
 type MyProps = {
     prompt: string,
